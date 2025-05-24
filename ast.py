@@ -57,3 +57,10 @@ class FuncCall(Node):
 class Return(Node):
     def __init__(self, expr):
         self.expr = expr
+class UnaryOp(Node):
+    def __init__(self, op, operand):
+        self.op = op
+        self.operand = operand
+class String(Node):
+    def __init__(self, value):
+        self.value = value

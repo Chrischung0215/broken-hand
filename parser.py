@@ -18,7 +18,7 @@ class Parser:
     def eat(self, token_type):
         if self.current_token.type == token_type:
             self.advance()
-            self.skip_newlines()  # 在每次成功吃掉 token 後嘗試跳過換行
+            self.skip_newlines()
         else:
             self.error(f"Expected token {token_type} but got {self.current_token.type}")
 
@@ -36,7 +36,6 @@ class Parser:
 
     def statement(self):
         if self.current_token.type == 'ID':
-            # 可能是 assignment 或函式呼叫
             next_token = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
             if next_token and next_token.type == 'ASSIGN':
                 return self.assignment()
@@ -75,12 +74,22 @@ class Parser:
         cond = self.expr()
         self.eat('RPAREN')
         self.eat('LBRACE')
-        body_stmts = []
+        then_body = []
         while self.current_token.type != 'RBRACE':
-            body_stmts.append(self.statement())
+            then_body.append(self.statement())
         self.eat('RBRACE')
-        # 暫時不處理 else
-        return If(cond, body_stmts, None)
+
+        else_body = None
+        # 判斷是否有 else
+        if self.current_token.type == 'ID' and self.current_token.value == 'else':
+            self.eat('ID')
+            self.eat('LBRACE')
+            else_body = []
+            while self.current_token.type != 'RBRACE':
+                else_body.append(self.statement())
+            self.eat('RBRACE')
+
+        return If(cond, then_body, else_body)
 
     def while_stmt(self):
         self.eat('WHILE')
@@ -121,8 +130,43 @@ class Parser:
         return Return(expr_node)
 
     def expr(self):
+        return self.logic_or()
+
+    def logic_or(self):
+        node = self.logic_and()
+        while self.current_token.type == 'OR':
+            token = self.current_token
+            self.eat('OR')
+            node = BinOp(left=node, op=token.type, right=self.logic_and())
+        return node
+
+    def logic_and(self):
+        node = self.equality()
+        while self.current_token.type == 'AND':
+            token = self.current_token
+            self.eat('AND')
+            node = BinOp(left=node, op=token.type, right=self.equality())
+        return node
+
+    def equality(self):
+        node = self.relational()
+        while self.current_token.type in ('EQ', 'NE'):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left=node, op=token.type, right=self.relational())
+        return node
+
+    def relational(self):
+        node = self.additive()
+        while self.current_token.type in ('LT', 'GT', 'LE', 'GE'):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left=node, op=token.type, right=self.additive())
+        return node
+
+    def additive(self):
         node = self.term()
-        while self.current_token.type in ('PLUS', 'MINUS', 'LT', 'GT'):
+        while self.current_token.type in ('PLUS', 'MINUS'):
             token = self.current_token
             self.eat(token.type)
             node = BinOp(left=node, op=token.type, right=self.term())
@@ -137,14 +181,19 @@ class Parser:
         return node
 
     def factor(self):
-        self.skip_newlines()  # 新增：跳過換行避免出錯
+        self.skip_newlines()
         token = self.current_token
         if token.type == 'NUMBER':
             self.eat('NUMBER')
             return Number(token.value)
         elif token.type == 'BOOLEAN':
+            val = token.value
             self.eat('BOOLEAN')
-            return Boolean(token.value == 'T')
+            return Boolean(val)
+        elif token.type == 'STRING':
+            val = token.value
+            self.eat('STRING')
+            return String(val)
         elif token.type == 'ID':
             id_name = token.value
             self.eat('ID')

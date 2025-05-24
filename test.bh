@@ -1,32 +1,55 @@
-x = 10
-y = 20
-print x + y
+print T         # 測試 BOOLEAN 與 print
+print F
 
-? (x < y) {
-    print x
+x = 0              # 測試 assignment 與數字
+print x
+
+? (x == 0) {      # 測試 if 判斷式為 True 的情況
+    print 100
+} else {
+    print 200
 }
 
-a = 100
-a = a + 1
-print a
-
-@ (x > 0) {
-    print x
-    x = x - 3
+x = 1
+? (x == 0) {      # 測試 else 分支
+    print 300
+} else {
+    print 400
 }
 
-f add(a, b) {
+y = 0
+@ (y < 3) {    # 測試 while 迴圈
+    print y
+    y = y + 1
+}
+
+f add(a, b) {   # 測試 function 定義與 return
     r a + b
 }
 
-print add(5, 7)
+print add(5, 7)    # 測試 function 呼叫與運算結果是否正確
 
-
-x=5
-i=3
-f tes(x){
-	x=10
-	print x
+f test_bool(val) {
+    ? (val) {
+        print 1
+    } else {
+        print 0
+    }
 }
-tes(x)
-print x
+
+test_bool(T)    # 測試函數內部使用 boolean 與 if
+test_bool(F)
+
+print "www"+" owo"		#測試字串
+
+x = 10
+print x         # 輸出 10
+
+f a(x) {
+    x = x + 5
+    print x     # 輸出 x+5，函式裡的 x 是區域變數
+    r x
+}
+
+print a(3)      # 輸出 8
+print x         # 再次輸出全域 x，應該還是 10，函式內的 x 不影響這裡

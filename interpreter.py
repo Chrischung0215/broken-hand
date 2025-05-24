@@ -21,6 +21,22 @@ class Environment:
     def set(self, name, value):
         self.vars[name] = value
 
+    def assign(self, name, value):
+        if name in self.vars:
+            self.vars[name] = value
+        elif self.parent:
+            self.parent.assign(name, value)
+        else:
+            raise BrokenHandError(f"Cannot assign to undefined variable '{name}'")
+
+    def resolve(self, name):
+        if name in self.vars:
+            return True
+        elif self.parent:
+            return self.parent.resolve(name)
+        else:
+            return False
+
 class Interpreter:
     def __init__(self, tree):
         self.tree = tree
@@ -55,14 +71,23 @@ class Interpreter:
 
     def visit_Assign(self, node, env):
         value = self.visit(node.expr, env)
-        env.set(node.name, value)
+        if env.resolve(node.name):  # 如果變數已宣告過，就用 assign 更新
+            env.assign(node.name, value)
+        else:  # 如果沒宣告過，就用 set 新增
+            env.set(node.name, value)
 
     def visit_BinOp(self, node, env):
         left = self.visit(node.left, env)
         right = self.visit(node.right, env)
         op = node.op
         if op == 'PLUS':
-            return left + right
+            if isinstance(left, str) and isinstance(right, str):
+                return left + right
+            elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                return left + right
+            else:
+                raise BrokenHandError(
+                    f"TypeError: unsupported operand types for +: '{type(left).__name__}' and '{type(right).__name__}'")
         elif op == 'MINUS':
             return left - right
         elif op == 'MUL':
@@ -73,12 +98,27 @@ class Interpreter:
             return left < right
         elif op == 'GT':
             return left > right
+        elif op == 'EQ':
+            return left == right
+        elif op == 'NE':
+            return left != right
+        elif op == 'LE':
+            return left <= right
+        elif op == 'GE':
+            return left >= right
+        elif op == 'AND':
+            return left and right
+        elif op == 'OR':
+            return left or right
         else:
             raise BrokenHandError(f"Unknown binary operator {op}")
 
     def visit_Print(self, node, env):
         value = self.visit(node.expr, env)
         print(value)
+
+    def visit_String(self, node, env):
+        return node.value
 
     def visit_If(self, node, env):
         cond = self.visit(node.cond, env)
@@ -95,14 +135,18 @@ class Interpreter:
                 self.visit(stmt, env)
 
     def visit_FunctionDef(self, node, env):
-        self.functions[node.name] = node
+        env.set(node.name, node)
 
     def visit_FuncCall(self, node, env):
-        func_def = self.functions.get(node.name)
-        if func_def is None:
+        try:
+            func_def = env.get(node.name)
+        except BrokenHandError:
             raise BrokenHandError(f"Function '{node.name}' is not defined")
+
         if len(func_def.params) != len(node.args):
-            raise BrokenHandError(f"Function '{node.name}' expects {len(func_def.params)} arguments but got {len(node.args)}")
+            raise BrokenHandError(
+                f"Function '{node.name}' expects {len(func_def.params)} arguments but got {len(node.args)}"
+            )
         new_env = Environment(parent=self.global_env)
         for param, arg in zip(func_def.params, node.args):
             new_env.set(param, self.visit(arg, env))

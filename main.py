@@ -20,8 +20,21 @@ def main():
         tree = parser.parse()
         interpreter = Interpreter(tree)
         interpreter.interpret()
+        # for t in tokens:
+        #     print(t)
     except BrokenHandError as e:
         print(f"Error: {e}")
 
 if __name__ == '__main__':
     main()
+# code = """
+# x = 3 + 5
+# print x
+# f add(a, b) {
+#     r a + b
+# }
+# """
+# lexer = Lexer(code)
+# tokens = lexer.tokenize()
+# for t in tokens:
+#     print(t)
