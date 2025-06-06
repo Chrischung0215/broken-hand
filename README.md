@@ -31,6 +31,6 @@ Broken Hand (bh) 是一個簡單的直譯式程式語言，支援基本運算、
 ## 執行範例
 
 ```bash
-python main.py file-name.bh
+python main.py test.bh
 
 
