@@ -1,6 +1,12 @@
 ﻿from ast import *
 from error import BrokenHandError
 
+class BreakException(Exception):
+    pass
+
+class ContinueException(Exception):
+    pass
+
 class ReturnValue(Exception):
     def __init__(self, value):
         self.value = value
@@ -81,8 +87,8 @@ class Interpreter:
         right = self.visit(node.right, env)
         op = node.op
         if op == 'PLUS':
-            if isinstance(left, str) and isinstance(right, str):
-                return left + right
+            if isinstance(left, str) or isinstance(right, str):
+                return str(left) + str(right)
             elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
                 return left + right
             else:
@@ -113,6 +119,13 @@ class Interpreter:
         else:
             raise BrokenHandError(f"Unknown binary operator {op}")
 
+    def visit_UnaryOp(self, node, env):
+        operand = self.visit(node.operand, env)
+        op = node.op
+        if op == 'NOT':
+            return not operand
+        else:
+            raise Exception(f"Unknown unary operator {op}")
     def visit_Print(self, node, env):
         value = self.visit(node.expr, env)
         print(value)
@@ -131,8 +144,46 @@ class Interpreter:
 
     def visit_While(self, node, env):
         while self.visit(node.cond, env):
-            for stmt in node.body:
+            try:
+                for stmt in node.body:
+                    self.visit(stmt, env)
+            except ContinueException:
+                continue
+            except BreakException:
+                break
+
+    def visit_For(self, node, env):
+        self.visit(node.init, env)
+        while self.visit(node.cond, env):
+            try:
+                for stmt in node.body:
+                    self.visit(stmt, env)
+            except ContinueException:
+                self.visit(node.update, env)
+                continue
+            except BreakException:
+                break
+            self.visit(node.update, env)
+
+    def visit_Switch(self, node, env):
+        val = self.visit(node.expr, env)
+        matched = False
+        for case_val_node, stmts in node.cases:
+            case_val = self.visit(case_val_node, env)
+            if val == case_val:
+                for stmt in stmts:
+                    self.visit(stmt, env)
+                matched = True
+                break
+        if not matched and node.default is not None:
+            for stmt in node.default:
                 self.visit(stmt, env)
+
+    def visit_Break(self, node, env):
+        raise BreakException()
+
+    def visit_Continue(self, node, env):
+        raise ContinueException()
 
     def visit_FunctionDef(self, node, env):
         env.set(node.name, node)

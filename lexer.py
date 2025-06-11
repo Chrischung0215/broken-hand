@@ -5,12 +5,26 @@ TOKEN_SPEC = [
     ('NUMBER',   r'\d+(\.\d+)?'),
     ('BOOLEAN',  r'T|F'),
     ('STRING',   r'"[^"\n]*"'),
-    ('ID',       r'[a-zA-Z_][a-zA-Z0-9_]*'),
+    ('IF',       r'\?'),
+    ('ELSE',     r'~'),
+    ('WHILE',    r'@'),
+    ('FOR',      r'\$'),
+    ('SWITCH',   r'\^'),
+    ('NE', r'!='),
+    ('BREAK',    r'<<'),
+    ('CONTINUE', r'>>'),
+    ('NOT',      r'!'),
+    ('CASE',     r'\|'),
+    ('DEFAULT',  r'_'),
+    ('PRINT',    r'%'),
+    ('FUNCTION', r'f'),
+    ('RETURN',   r'r'),
     ('EQ',       r'=='),
-    ('NE',       r'!='),
     ('LE',       r'<='),
     ('GE',       r'>='),
     ('ASSIGN',   r'='),
+    ('COLON',    r':'),
+    ('SEMICOLON',r';'),
     ('PLUS',     r'\+'),
     ('MINUS',    r'-'),
     ('MUL',      r'\*'),
@@ -22,30 +36,29 @@ TOKEN_SPEC = [
     ('COMMA',    r','),
     ('NEWLINE',  r'\n'),
     ('SKIP',     r'[ \t]+'),
-    ('IF',       r'\?'),
-    ('WHILE',    r'@'),
     ('AND',      r'&&'),
     ('OR',       r'\|\|'),
     ('LT',       r'<'),
     ('GT',       r'>'),
+    ('ID',       r'[a-zA-Z_][a-zA-Z0-9_]*'),
 ]
 
 TOKEN_REGEX = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC)
 
 KEYWORDS = {
-    'print': 'PRINT',
-    'f': 'FUNCTION',
-    'r': 'RETURN',
     'T': 'BOOLEAN',
     'F': 'BOOLEAN',
 }
 
 class Token:
-    def __init__(self, type_, value):
+    def __init__(self, type_, value, line=1, column=1):
         self.type = type_
         self.value = value
+        self.line = line
+        self.column = column
+
     def __repr__(self):
-        return f'Token({self.type}, {self.value})'
+        return f'Token({self.type}, {self.value}, line={self.line}, column={self.column})'
 
 class Lexer:
     def __init__(self, code):
@@ -55,6 +68,7 @@ class Lexer:
     def tokenize(self):
         pos = 0
         line = 1
+        col = 1
         while pos < len(self.code):
             if self.code[pos] == '#':
                 while pos < len(self.code) and self.code[pos] != '\n':
@@ -62,6 +76,7 @@ class Lexer:
                 if pos < len(self.code) and self.code[pos] == '\n':
                     pos += 1
                     line += 1
+                    col = 1
                 continue
 
             match = re.match(TOKEN_REGEX, self.code[pos:])
@@ -77,18 +92,23 @@ class Lexer:
                 if kind == 'NUMBER':
                     value = float(text) if '.' in text else int(text)
                 if kind == 'STRING':
-                    # 去除前後雙引號
                     value = text[1:-1]
                 elif kind == 'SKIP':
                     pos += len(text)
+                    col += len(text)
                     continue
                 elif kind == 'NEWLINE':
                     value = '\n'
                     line += 1
+                    col = 1
 
-                self.tokens.append(Token(kind, value))
+                self.tokens.append(Token(kind, value, line, col))
                 pos += len(text)
+                if kind == 'NEWLINE':
+                    col = 1
+                else:
+                    col += len(text)
             else:
-                raise BrokenHandError(f"Illegal character: '{self.code[pos]}' at line {line}")
-        self.tokens.append(Token('EOF', None))
+                raise BrokenHandError(f"Illegal character: '{self.code[pos]}' at line {line}, column {col}")
+        self.tokens.append(Token('EOF', None, line, col))
         return self.tokens

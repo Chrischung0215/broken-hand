@@ -43,6 +43,13 @@ class While(Node):
         self.cond = cond
         self.body = body
 
+class For(Node):
+    def __init__(self, init, cond, update, body):
+        self.init = init
+        self.cond = cond
+        self.update = update
+        self.body = body
+
 class FunctionDef(Node):
     def __init__(self, name, params, body):
         self.name = name
@@ -64,3 +71,13 @@ class UnaryOp(Node):
 class String(Node):
     def __init__(self, value):
         self.value = value
+class Switch(Node):
+    def __init__(self, expr, cases, default=None):
+        self.expr = expr
+        self.cases = cases
+        self.default = default
+class Break(Node):
+    pass
+
+class Continue(Node):
+    pass

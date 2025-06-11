@@ -1,55 +1,102 @@
-print T         # 測試 BOOLEAN 與 print
-print F
+# 測試全域變數、區域變數、指派與作用域
 
-x = 0              # 測試 assignment 與數字
-print x
+x = 10
+y = 99
 
-? (x == 0) {      # 測試 if 判斷式為 True 的情況
-    print 100
-} else {
-    print 200
+% "全域 x 初值:"
+% x
+
+f change_x(a) {
+	x = a       # 這會蓋掉全域 x？
+    % "函式內 x:"
+    % x
 }
 
-x = 1
-? (x == 0) {      # 測試 else 分支
-    print 300
-} else {
-    print 400
+change_x(100)
+% "呼叫完 change_x 之後全域 x:"
+% x
+
+f local_test() {
+    z = 77
+    % "local_test 內 z:"
+    % z
+}
+local_test()
+# % z   # 這裡應該會出錯：z 在全域不可見
+
+# if-else 判斷與巢狀
+? (x > 50) {
+    % "x > 50"
+} ~ {
+    % "x <= 50"
 }
 
-y = 0
-@ (y < 3) {    # 測試 while 迴圈
-    print y
-    y = y + 1
+# while 迴圈
+j = 0
+@ (j < 5) {
+    j = j + 1
+    ? (j == 3) {
+        >>      # continue
+    }
+    ? (j == 4) {
+        <<      # break
+    }
+    % j
 }
 
-f add(a, b) {   # 測試 function 定義與 return
-    r a + b
+# for 迴圈
+$ (i = 0; i < 5; i = i + 1) {
+    ? (i == 2) {
+        <<      # continue
+    }
+    ? (i == 4) {
+        >>      # break
+    }
+    % i
 }
 
-print add(5, 7)    # 測試 function 呼叫與運算結果是否正確
-
-f test_bool(val) {
-    ? (val) {
-        print 1
-    } else {
-        print 0
+# switch-case 判斷
+t = 2
+^ (t) {
+    | 1: {
+        % "one"
+    }
+    | 2: {
+        % "two"
+    }
+    _: {
+        % "not one or two"
     }
 }
 
-test_bool(T)    # 測試函數內部使用 boolean 與 if
-test_bool(F)
-
-print "www"+" owo"		#測試字串
-
-x = 10
-print x         # 輸出 10
-
-f a(x) {
-    x = x + 5
-    print x     # 輸出 x+5，函式裡的 x 是區域變數
-    r x
+# 布林邏輯
+b1 = T
+b2 = F
+? (b1 && !b2) {
+    % "邏輯運算通過"
+} ~ {
+    % "邏輯運算失敗"
 }
 
-print a(3)      # 輸出 8
-print x         # 再次輸出全域 x，應該還是 10，函式內的 x 不影響這裡
+# 字串操作 & 函式回傳
+f concat_hello(name) {
+    r "Hello, " + name
+}
+% concat_hello("world")
+
+# 作用域測試：區域變數不影響全域
+m = 5
+f scope_demo() {
+    m = 100
+    % "函式內 m: " + m
+}
+scope_demo()
+% "全域 m: " + m
+
+# 測試 return 中斷
+f early_return() {
+    % "這應該會印"
+    r 123
+    % "這不會被印"
+}
+% early_return()

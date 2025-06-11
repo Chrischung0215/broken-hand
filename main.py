@@ -3,7 +3,7 @@ from lexer import Lexer
 from parser import Parser
 from interpreter import Interpreter
 from error import BrokenHandError
-
+sys.stdout.reconfigure(encoding='utf-8')
 def main():
     if len(sys.argv) < 2:
         print("Usage: python main.py source.bh")

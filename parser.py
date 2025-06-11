@@ -8,7 +8,9 @@ class Parser:
         self.current_token = self.tokens[self.pos]
 
     def error(self, msg='Syntax error'):
-        raise BrokenHandError(f"{msg} at position {self.pos}, token: {self.current_token}")
+        line = getattr(self.current_token, 'line', '?')
+        col = getattr(self.current_token, 'column', '?')
+        raise BrokenHandError(f"{msg} at line {line}, column {col}, token: {self.current_token}")
 
     def advance(self):
         self.pos += 1
@@ -46,12 +48,24 @@ class Parser:
             return self.print_stmt()
         elif self.current_token.type == 'IF':
             return self.if_stmt()
+        elif self.current_token.type == 'ELSE':
+            pass
         elif self.current_token.type == 'WHILE':
             return self.while_stmt()
+        elif self.current_token.type == 'FOR':
+            return self.for_stmt()
         elif self.current_token.type == 'FUNCTION':
             return self.function_def()
         elif self.current_token.type == 'RETURN':
             return self.return_stmt()
+        elif self.current_token.type == 'SWITCH':
+            return self.switch_stmt()
+        elif self.current_token.type == 'BREAK':
+            self.eat('BREAK')
+            return Break()
+        elif self.current_token.type == 'CONTINUE':
+            self.eat('CONTINUE')
+            return Continue()
         else:
             expr = self.expr()
             return expr
@@ -64,12 +78,12 @@ class Parser:
         return Assign(var_name, expr_node)
 
     def print_stmt(self):
-        self.eat('PRINT')
+        self.eat('PRINT')  # '%'
         expr_node = self.expr()
         return Print(expr_node)
 
     def if_stmt(self):
-        self.eat('IF')
+        self.eat('IF')  # '?'
         self.eat('LPAREN')
         cond = self.expr()
         self.eat('RPAREN')
@@ -78,21 +92,18 @@ class Parser:
         while self.current_token.type != 'RBRACE':
             then_body.append(self.statement())
         self.eat('RBRACE')
-
         else_body = None
-        # 判斷是否有 else
-        if self.current_token.type == 'ID' and self.current_token.value == 'else':
-            self.eat('ID')
+        if self.current_token.type == 'ELSE':  # '~'
+            self.eat('ELSE')
             self.eat('LBRACE')
             else_body = []
             while self.current_token.type != 'RBRACE':
                 else_body.append(self.statement())
             self.eat('RBRACE')
-
         return If(cond, then_body, else_body)
 
     def while_stmt(self):
-        self.eat('WHILE')
+        self.eat('WHILE')  # '@'
         self.eat('LPAREN')
         cond = self.expr()
         self.eat('RPAREN')
@@ -103,8 +114,56 @@ class Parser:
         self.eat('RBRACE')
         return While(cond, body_stmts)
 
+    def for_stmt(self):
+        self.eat('FOR')  # '$'
+        self.eat('LPAREN')
+        init = self.assignment_expr()
+        self.eat('SEMICOLON')
+        cond = self.assignment_expr()
+        self.eat('SEMICOLON')
+        update = self.assignment_expr()
+        self.eat('RPAREN')
+        self.eat('LBRACE')
+        body_stmts = []
+        while self.current_token.type != 'RBRACE':
+            body_stmts.append(self.statement())
+        self.eat('RBRACE')
+        return For(init, cond, update, body_stmts)
+
+    def switch_stmt(self):
+        self.eat('SWITCH')
+        self.eat('LPAREN')
+        expr = self.expr()
+        self.eat('RPAREN')
+        self.eat('LBRACE')
+        cases = []
+        default = None
+        while self.current_token.type != 'RBRACE':
+            if self.current_token.type == 'CASE':  # |
+                self.eat('CASE')
+                val = self.expr()
+                self.eat('COLON')
+                self.eat('LBRACE')
+                stmts = []
+                while self.current_token.type != 'RBRACE':
+                    stmts.append(self.statement())
+                self.eat('RBRACE')
+                cases.append((val, stmts))
+            elif self.current_token.type == 'DEFAULT':  # _
+                self.eat('DEFAULT')
+                self.eat('COLON')
+                self.eat('LBRACE')
+                default = []
+                while self.current_token.type != 'RBRACE':
+                    default.append(self.statement())
+                self.eat('RBRACE')
+            else:
+                self.error('Expected case/default or }')
+        self.eat('RBRACE')
+        return Switch(expr, cases, default)
+
     def function_def(self):
-        self.eat('FUNCTION')
+        self.eat('FUNCTION')  # 'f'
         func_name = self.current_token.value
         self.eat('ID')
         self.eat('LPAREN')
@@ -125,7 +184,7 @@ class Parser:
         return FunctionDef(func_name, params, body_stmts)
 
     def return_stmt(self):
-        self.eat('RETURN')
+        self.eat('RETURN')  # 'r'
         expr_node = self.expr()
         return Return(expr_node)
 
@@ -180,6 +239,17 @@ class Parser:
             node = BinOp(left=node, op=token.type, right=self.factor())
         return node
 
+    def assignment_expr(self):
+        if self.current_token.type == 'ID':
+            next_token = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+            if next_token and next_token.type == 'ASSIGN':
+                var_name = self.current_token.value
+                self.eat('ID')
+                self.eat('ASSIGN')
+                expr_node = self.expr()
+                return Assign(var_name, expr_node)
+        return self.expr()
+
     def factor(self):
         self.skip_newlines()
         token = self.current_token
@@ -214,5 +284,8 @@ class Parser:
             node = self.expr()
             self.eat('RPAREN')
             return node
+        elif token.type == 'NOT':
+            self.eat('NOT')
+            return UnaryOp('NOT', self.factor())
         else:
             self.error("Unexpected token in factor")
