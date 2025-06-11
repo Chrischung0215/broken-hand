@@ -94,6 +94,8 @@ class Interpreter:
             else:
                 raise BrokenHandError(
                     f"TypeError: unsupported operand types for +: '{type(left).__name__}' and '{type(right).__name__}'")
+        elif op == 'MOD':
+            return left % right
         elif op == 'MINUS':
             return left - right
         elif op == 'MUL':

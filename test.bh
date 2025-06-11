@@ -3,32 +3,32 @@
 x = 10
 y = 99
 
-% "全域 x 初值:"
-% x
+p "全域 x 初值:"
+p x
 
 f change_x(a) {
 	x = a       # 這會蓋掉全域 x？
-    % "函式內 x:"
-    % x
+    p "函式內 x:"
+    p x
 }
 
 change_x(100)
-% "呼叫完 change_x 之後全域 x:"
-% x
+p "呼叫完 change_x 之後全域 x:"
+p x
 
 f local_test() {
     z = 77
-    % "local_test 內 z:"
-    % z
+    p "local_test 內 z:"
+    p z
 }
 local_test()
-# % z   # 這裡應該會出錯：z 在全域不可見
+# p z   # 這裡應該會出錯：z 在全域不可見
 
 # if-else 判斷與巢狀
 ? (x > 50) {
-    % "x > 50"
+    p "x > 50"
 } ~ {
-    % "x <= 50"
+    p "x <= 50"
 }
 
 # while 迴圈
@@ -41,7 +41,7 @@ j = 0
     ? (j == 4) {
         <<      # break
     }
-    % j
+    p j
 }
 
 # for 迴圈
@@ -52,20 +52,20 @@ $ (i = 0; i < 5; i = i + 1) {
     ? (i == 4) {
         >>      # break
     }
-    % i
+    p i
 }
 
 # switch-case 判斷
 t = 2
 ^ (t) {
     | 1: {
-        % "one"
+        p "one"
     }
     | 2: {
-        % "two"
+        p "two"
     }
     _: {
-        % "not one or two"
+        p "not one or two"
     }
 }
 
@@ -73,30 +73,43 @@ t = 2
 b1 = T
 b2 = F
 ? (b1 && !b2) {
-    % "邏輯運算通過"
+    p "邏輯運算通過"
 } ~ {
-    % "邏輯運算失敗"
+    p "邏輯運算失敗"
 }
 
 # 字串操作 & 函式回傳
 f concat_hello(name) {
     r "Hello, " + name
 }
-% concat_hello("world")
+p concat_hello("world")
 
 # 作用域測試：區域變數不影響全域
 m = 5
 f scope_demo() {
     m = 100
-    % "函式內 m: " + m
+    p "函式內 m: " + m
 }
 scope_demo()
-% "全域 m: " + m
+p "全域 m: " + m
 
 # 測試 return 中斷
 f early_return() {
-    % "這應該會印"
+    p "這應該會印"
     r 123
-    % "這不會被印"
+    p "這不會被印"
 }
-% early_return()
+p early_return()
+
+f gcd(a, b) {	#測試%
+    @ (b != 0) {
+        temp = b
+        b = a % b
+        a = temp
+    }
+    r a
+}
+
+x = 48
+y = 18
+p "GCD of " + x + " and " + y + " is " + gcd(x, y)

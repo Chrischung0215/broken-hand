@@ -2,6 +2,7 @@
 from error import BrokenHandError
 
 TOKEN_SPEC = [
+    ('PRINT',    r'p'),
     ('NUMBER',   r'\d+(\.\d+)?'),
     ('BOOLEAN',  r'T|F'),
     ('STRING',   r'"[^"\n]*"'),
@@ -16,7 +17,7 @@ TOKEN_SPEC = [
     ('NOT',      r'!'),
     ('CASE',     r'\|'),
     ('DEFAULT',  r'_'),
-    ('PRINT',    r'%'),
+    ('MOD',      r'%'),
     ('FUNCTION', r'f'),
     ('RETURN',   r'r'),
     ('EQ',       r'=='),

@@ -233,7 +233,7 @@ class Parser:
 
     def term(self):
         node = self.factor()
-        while self.current_token.type in ('MUL', 'DIV'):
+        while self.current_token.type in ('MUL', 'DIV', 'MOD'):
             token = self.current_token
             self.eat(token.type)
             node = BinOp(left=node, op=token.type, right=self.factor())
