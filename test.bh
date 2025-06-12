@@ -109,14 +109,15 @@ f gcd(a, b) {	#測試%
     }
     r a
 }
-f gcd(a, b) {	#測試遞迴
+f gcd2(a, b) {	#測試遞迴
     ?(a%b==0){
     	r b
     }~{
-    	r gcd(b,a%b)
+    	r gcd2(b,a%b)
     }
 }
 
 x = 48
 y = 18
 p "GCD of " + x + " and " + y + " is " + gcd(x, y)
+p "GCD of " + x + " and " + y + " is " + gcd2(x, y)
